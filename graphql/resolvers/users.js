@@ -23,6 +23,36 @@ function generateToken(user) {
 
 module.exports = {
     Mutation: {
+        // login validater 
+        async login(_, { username, password }) {
+            const { errors, valid } = validateLoginInput(username, password);
+      
+            if (!valid) {
+              throw new UserInputError('Errors', { errors });
+            }
+      
+            const user = await User.findOne({ username });
+      
+            if (!user) {
+              errors.general = 'User not found';
+              throw new UserInputError('User not found', { errors });
+            }
+      
+            const match = await bcrypt.compare(password, user.password);
+            if (!match) {
+              errors.general = 'Wrong crendetials';
+              throw new UserInputError('Wrong crendetials', { errors });
+            }
+      
+            const token = generateToken(user);
+      
+            return {
+              ...user._doc,
+              id: user._id,
+              token
+            };
+        },
+        // register validater 
         async register(
             _, 
             { 
